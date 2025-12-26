@@ -1,0 +1,62 @@
+{
+    "KNN": {
+        "accuracy_test": 0.3960573476702509,
+        "precision": 0.41061344722387694,
+        "recall": 0.3960573476702509,
+        "f1_score": 0.401292278289437,
+        "roc_auc": 0.5585651539722483,
+        "variety_names": [
+            "co_43",
+            "delux ponni",
+            "ponmani"
+        ]
+    },
+    "Logistic Regression": {
+        "accuracy_test": 0.6559139784946236,
+        "precision": 0.6072140241600038,
+        "recall": 0.6559139784946236,
+        "f1_score": 0.6076852164585682,
+        "roc_auc": 0.8120838032680551,
+        "variety_names": [
+            "co_43",
+            "delux ponni",
+            "ponmani"
+        ]
+    },
+    "Decision Tree": {
+        "accuracy_test": 0.6344086021505376,
+        "precision": 0.7431444304193652,
+        "recall": 0.6344086021505376,
+        "f1_score": 0.6300183319613616,
+        "roc_auc": 0.8138813001703036,
+        "variety_names": [
+            "co_43",
+            "delux ponni",
+            "ponmani"
+        ]
+    },
+    "Random Forest": {
+        "accuracy_test": 0.8046594982078853,
+        "precision": 0.8075103100001321,
+        "recall": 0.8046594982078853,
+        "f1_score": 0.8051655324792386,
+        "roc_auc": 0.9196904381145965,
+        "variety_names": [
+            "co_43",
+            "delux ponni",
+            "ponmani"
+        ]
+    },
+    "XGBoost": {
+        "accuracy_test": 0.8870967741935484,
+        "precision": 0.8890336419958019,
+        "recall": 0.8870967741935484,
+        "f1_score": 0.886922126447442,
+        "roc_auc": 0.9561758409831799,
+        "variety_names": [
+            "co_43",
+            "delux ponni",
+            "ponmani"
+        ]
+    }
+}

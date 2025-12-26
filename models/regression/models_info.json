@@ -1,0 +1,102 @@
+{
+    "Linear Regression": {
+        "test_rmse": 2401.445084957463,
+        "test_mae": 1472.7701330464624,
+        "test_r2": 0.9252147392807749,
+        "cv_rmse": 2559.537127720298,
+        "features": [
+            "Hectares ",
+            "Seedrate(in Kg)",
+            "LP_Mainfield(in Tonnes)",
+            "Nursery area (Cents)",
+            "LP_nurseryarea(in Tonnes)",
+            "DAP_20days",
+            "Weed28D_thiobencarb",
+            "Urea_40Days",
+            "Potassh_50Days",
+            "Micronutrients_70Days",
+            "Pest_60Day(in ml)",
+            "Trash(in bundles)"
+        ]
+    },
+    "Lasso": {
+        "test_rmse": 2401.444824585095,
+        "test_mae": 1472.770112433852,
+        "test_r2": 0.9252147554976891,
+        "cv_rmse": 2559.5372152524324,
+        "features": [
+            "Hectares ",
+            "Seedrate(in Kg)",
+            "LP_Mainfield(in Tonnes)",
+            "Nursery area (Cents)",
+            "LP_nurseryarea(in Tonnes)",
+            "DAP_20days",
+            "Weed28D_thiobencarb",
+            "Urea_40Days",
+            "Potassh_50Days",
+            "Micronutrients_70Days",
+            "Pest_60Day(in ml)",
+            "Trash(in bundles)"
+        ]
+    },
+    "Ridge": {
+        "test_rmse": 2400.825495948539,
+        "test_mae": 1473.7016404234973,
+        "test_r2": 0.9252533245046013,
+        "cv_rmse": 2557.8901581863283,
+        "features": [
+            "Hectares ",
+            "Seedrate(in Kg)",
+            "LP_Mainfield(in Tonnes)",
+            "Nursery area (Cents)",
+            "LP_nurseryarea(in Tonnes)",
+            "DAP_20days",
+            "Weed28D_thiobencarb",
+            "Urea_40Days",
+            "Potassh_50Days",
+            "Micronutrients_70Days",
+            "Pest_60Day(in ml)",
+            "Trash(in bundles)"
+        ]
+    },
+    "ElasticNet": {
+        "test_rmse": 2401.365290093786,
+        "test_mae": 1472.8716381838808,
+        "test_r2": 0.9252197091054678,
+        "cv_rmse": 2559.3732102503623,
+        "features": [
+            "Hectares ",
+            "Seedrate(in Kg)",
+            "LP_Mainfield(in Tonnes)",
+            "Nursery area (Cents)",
+            "LP_nurseryarea(in Tonnes)",
+            "DAP_20days",
+            "Weed28D_thiobencarb",
+            "Urea_40Days",
+            "Potassh_50Days",
+            "Micronutrients_70Days",
+            "Pest_60Day(in ml)",
+            "Trash(in bundles)"
+        ]
+    },
+    "XGBoost": {
+        "test_rmse": 2381.584399637601,
+        "test_mae": 1297.4933565748208,
+        "test_r2": 0.9264466180791204,
+        "cv_rmse": 2648.4397254304704,
+        "features": [
+            "Hectares ",
+            "Seedrate(in Kg)",
+            "LP_Mainfield(in Tonnes)",
+            "Nursery area (Cents)",
+            "LP_nurseryarea(in Tonnes)",
+            "DAP_20days",
+            "Weed28D_thiobencarb",
+            "Urea_40Days",
+            "Potassh_50Days",
+            "Micronutrients_70Days",
+            "Pest_60Day(in ml)",
+            "Trash(in bundles)"
+        ]
+    }
+}
