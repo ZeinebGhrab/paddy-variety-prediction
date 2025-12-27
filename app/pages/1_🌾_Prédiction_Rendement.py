@@ -61,44 +61,25 @@ st.header("📝 Informations sur la Parcelle")
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("🌡️ Données Météorologiques")
-    
-    rain_30d = st.number_input("Précipitations 0-30 jours (mm)", min_value=0.0, value=50.0, step=5.0)
-    rain_30_50d = st.number_input("Précipitations 30-50 jours (mm)", min_value=0.0, value=60.0, step=5.0)
-    rain_50_80d = st.number_input("Précipitations 50-80 jours (mm)", min_value=0.0, value=70.0, step=5.0)
-    rain_80_110d = st.number_input("Précipitations 80-110 jours (mm)", min_value=0.0, value=40.0, step=5.0)
-    
-    temp_min_30d = st.number_input("Température min 0-30 jours (°C)", min_value=10.0, max_value=35.0, value=22.0, step=0.5)
-    temp_max_30d = st.number_input("Température max 0-30 jours (°C)", min_value=20.0, max_value=45.0, value=35.0, step=0.5)
-    
-    humidity = st.number_input("Humidité moyenne (%)", min_value=30.0, max_value=100.0, value=70.0, step=5.0)
-    wind_speed = st.number_input("Vitesse du vent (km/h)", min_value=0.0, max_value=50.0, value=10.0, step=1.0)
-    
     st.subheader("🌱 Parcelle")
     
     hectares = st.number_input("Superficie (hectares)", min_value=0.1, max_value=100.0, value=2.0, step=0.1)
     nursery_area = st.number_input("Surface pépinière (cents)", min_value=0.0, value=50.0, step=5.0)
-    
-    soil_type = st.selectbox("Type de sol", ["alluvial", "clay", "loamy", "sandy"])
-    nursery_type = st.selectbox("Type de pépinière", ["wet", "dry"])
-    agriblock = st.selectbox("Bloc agricole", [f"Block_{i}" for i in range(1, 11)])
-
-with col2:
-    st.subheader("💊 Intrants")
-    
-    dap_20days = st.number_input("DAP à 20 jours (kg)", min_value=0.0, value=50.0, step=5.0)
-    urea_40days = st.number_input("Urée à 40 jours (kg)", min_value=0.0, value=60.0, step=5.0)
-    potash_50days = st.number_input("Potasse à 50 jours (kg)", min_value=0.0, value=40.0, step=5.0)
-    micronutrients_70days = st.number_input("Micronutriments à 70 jours (kg)", min_value=0.0, value=10.0, step=1.0)
-    
-    pesticide_60days = st.number_input("Pesticide à 60 jours (ml)", min_value=0.0, value=500.0, step=50.0)
-    weed_herbicide = st.number_input("Herbicide (ml)", min_value=0.0, value=300.0, step=50.0)
-    
     seedrate = st.number_input("Taux de semis (kg)", min_value=10.0, max_value=100.0, value=40.0, step=5.0)
     trash = st.number_input("Résidus (bottes)", min_value=0.0, value=20.0, step=5.0)
     
     lp_nursery = st.number_input("LP pépinière (tonnes)", min_value=0.0, value=2.0, step=0.5)
     lp_mainfield = st.number_input("LP champ principal (tonnes)", min_value=0.0, value=5.0, step=0.5)
+
+with col2:
+    st.subheader("💊 Intrants")
+    
+    dap_20days = st.number_input("DAP à 20 jours (kg)", min_value=0.0, value=50.0, step=5.0)
+    weed_herbicide = st.number_input("Herbicide 28 jours (ml)", min_value=0.0, value=300.0, step=50.0)
+    urea_40days = st.number_input("Urée à 40 jours (kg)", min_value=0.0, value=60.0, step=5.0)
+    potash_50days = st.number_input("Potasse à 50 jours (kg)", min_value=0.0, value=40.0, step=5.0)
+    micronutrients_70days = st.number_input("Micronutriments à 70 jours (kg)", min_value=0.0, value=10.0, step=1.0)
+    pesticide_60days = st.number_input("Pesticide à 60 jours (ml)", min_value=0.0, value=500.0, step=50.0)
 
 st.markdown("---")
 
@@ -113,11 +94,11 @@ model_choice = st.selectbox(
 
 # Afficher les performances du modèle
 performance_metrics = {
-    'Ridge Regression': {'R²': 0.89, 'RMSE': 2887, 'MAE': 1688},
-    'Linear Regression': {'R²': 0.89, 'RMSE': 2889, 'MAE': 1688},
-    'Lasso': {'R²': 0.89, 'RMSE': 2888, 'MAE': 1688},
-    'ElasticNet': {'R²': 0.89, 'RMSE': 2888, 'MAE': 1688},
-    'XGBoost': {'R²': 0.90, 'RMSE': 2665, 'MAE': 1550}
+    'Ridge Regression': {'R²': 0.925, 'RMSE': 2401, 'MAE': 1474},
+    'Linear Regression': {'R²': 0.925, 'RMSE': 2401, 'MAE': 1473},
+    'Lasso': {'R²': 0.925, 'RMSE': 2401, 'MAE': 1473},
+    'ElasticNet': {'R²': 0.925, 'RMSE': 2401, 'MAE': 1473},
+    'XGBoost': {'R²': 0.926, 'RMSE': 2382, 'MAE': 1297}
 }
 
 if model_choice in performance_metrics:
@@ -132,34 +113,23 @@ st.markdown("---")
 # Bouton de prédiction
 if st.button("🎯 Prédire le Rendement", type="primary", use_container_width=True):
     if model_choice in models:
-        # Préparer les données (adapter selon vos features réelles)
-        input_data = pd.DataFrame({
-            'Rain_30D': [rain_30d],
-            'Rain_30_50D': [rain_30_50d],
-            'Rain_50_80D': [rain_50_80d],
-            'Rain_80_110D': [rain_80_110d],
-            'Temp_Min_30D': [temp_min_30d],
-            'Temp_Max_30D': [temp_max_30d],
-            'Humidity': [humidity],
-            'Wind_Speed': [wind_speed],
-            'Hectares': [hectares],
-            'Nursery_Area': [nursery_area],
-            'DAP_20days': [dap_20days],
-            'Urea_40days': [urea_40days],
-            'Potash_50days': [potash_50days],
-            'Micronutrients_70days': [micronutrients_70days],
-            'Pesticide_60days': [pesticide_60days],
-            'Weed_Herbicide': [weed_herbicide],
-            'Seedrate': [seedrate],
-            'Trash': [trash],
-            'LP_Nursery': [lp_nursery],
-            'LP_Mainfield': [lp_mainfield]
-        })
-        
-        # Encodage des variables catégorielles (exemple simplifié)
-        # À adapter selon votre encodage réel
-        
         try:
+            # Préparer les données avec les VRAIS noms de colonnes utilisés lors de l'entraînement
+            input_data = pd.DataFrame({
+                'Hectares ': [hectares],  # Attention à l'espace
+                'Seedrate(in Kg)': [seedrate],
+                'LP_Mainfield(in Tonnes)': [lp_mainfield],
+                'Nursery area (Cents)': [nursery_area],
+                'LP_nurseryarea(in Tonnes)': [lp_nursery],
+                'DAP_20days': [dap_20days],
+                'Weed28D_thiobencarb': [weed_herbicide],
+                'Urea_40Days': [urea_40days],
+                'Potassh_50Days': [potash_50days],
+                'Micronutrients_70Days': [micronutrients_70days],
+                'Pest_60Day(in ml)': [pesticide_60days],
+                'Trash(in bundles)': [trash]
+            })
+            
             # Normalisation
             if scaler is not None:
                 input_scaled = scaler.transform(input_data)
@@ -234,14 +204,14 @@ if st.button("🎯 Prédire le Rendement", type="primary", use_container_width=T
             
             recommendations = []
             
-            if rain_30d < 30:
-                recommendations.append("💧 Irrigation supplémentaire recommandée en début de cycle")
             if dap_20days < 40:
-                recommendations.append("🌱 Augmentez légèrement l'apport en DAP")
+                recommendations.append("🌱 Augmentez légèrement l'apport en DAP (recommandé: 40-60 kg)")
             if micronutrients_70days < 8:
-                recommendations.append("💊 Complément en micronutriments recommandé")
+                recommendations.append("💊 Complément en micronutriments recommandé (recommandé: 8-12 kg)")
             if seedrate < 30:
-                recommendations.append("🌾 Le taux de semis pourrait être augmenté")
+                recommendations.append("🌾 Le taux de semis pourrait être augmenté (recommandé: 30-50 kg)")
+            if urea_40days < 50:
+                recommendations.append("💧 Considérez d'augmenter l'apport en urée (recommandé: 50-70 kg)")
             
             if recommendations:
                 for rec in recommendations:
@@ -252,6 +222,9 @@ if st.button("🎯 Prédire le Rendement", type="primary", use_container_width=T
         except Exception as e:
             st.error(f"❌ Erreur lors de la prédiction : {str(e)}")
             st.info("Vérifiez que tous les champs sont correctement remplis")
+            import traceback
+            with st.expander("Détails de l'erreur"):
+                st.code(traceback.format_exc())
     else:
         st.error("Modèle non disponible")
 
@@ -261,14 +234,14 @@ with st.expander("ℹ️ À propos des modèles"):
     **Ridge Regression** (Recommandé)
     - Modèle linéaire régularisé
     - Excellent compromis précision/stabilité
-    - R² = 0.89, MAE = 1688 kg
+    - R² = 0.925, MAE = 1474 kg
     
     **XGBoost**
     - Modèle de boosting d'arbres
     - Légèrement plus précis
-    - R² = 0.90, MAE = 1550 kg
+    - R² = 0.926, MAE = 1297 kg
     
-    Les modèles ont été entraînés sur des milliers de parcelles avec validation croisée.
+    Les modèles ont été entraînés sur 12 features sélectionnées avec validation croisée.
     """)
 
 with st.expander("📖 Guide des intrants"):

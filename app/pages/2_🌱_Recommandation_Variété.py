@@ -38,12 +38,23 @@ def load_classification_models():
     
     return models, scaler
 
+# Charger le dataset nettoyé pour obtenir les colonnes exactes
+@st.cache_data
+def load_training_data():
+    """Charge les données d'entraînement pour obtenir la structure"""
+    try:
+        df = pd.read_csv("data/cleaned_paddydataset.csv")
+        return df
+    except:
+        return None
+
 models, scaler = load_classification_models()
+training_df = load_training_data()
 
 # Mapping des variétés
 VARIETY_NAMES = {
     0: 'CO_43',
-    1: 'Ponmani',
+    1: 'Ponmani', 
     2: 'Delux Ponni'
 }
 
@@ -99,44 +110,34 @@ Cette page vous aide à choisir parmi 3 variétés de riz :
 Remplissez les informations ci-dessous pour obtenir une recommandation personnalisée.
 """)
 
+if training_df is None:
+    st.error("❌ Impossible de charger les données d'entraînement. Vérifiez que le fichier `data/cleaned_paddydataset.csv` existe.")
+    st.stop()
+
 # Formulaire simplifié
 st.header("📝 Informations sur votre Parcelle")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.subheader("🌍 Localisation")
-    agriblock = st.selectbox("Bloc Agricole", [f"Block_{i}" for i in range(1, 11)])
+    st.subheader("🌍 Localisation & Sol")
+    agriblock = st.selectbox("Bloc Agricole", [f"block_{i}" for i in range(1, 11)])
     soil_type = st.selectbox("Type de Sol", 
                              ["alluvial", "clay", "loamy", "sandy"],
                              help="Alluvial: Léger, Clay: Argileux, Loamy: Limoneux, Sandy: Sableux")
-    
-    st.subheader("📏 Superficie")
-    hectares = st.number_input("Hectares", min_value=0.1, max_value=100.0, value=2.0, step=0.1)
-    nursery_area = st.number_input("Surface pépinière (cents)", min_value=0.0, value=50.0, step=5.0)
+    nursery_type = st.selectbox("Type de pépinière", ["wet", "dry"])
 
 with col2:
-    st.subheader("🌡️ Conditions Météo")
-    avg_rainfall = st.slider("Pluviométrie moyenne (mm)", 0, 300, 150)
-    avg_temp_min = st.slider("Température min moyenne (°C)", 15, 30, 22)
-    avg_temp_max = st.slider("Température max moyenne (°C)", 25, 42, 35)
-    humidity = st.slider("Humidité moyenne (%)", 40, 95, 70)
+    st.subheader("📏 Parcelle")
+    hectares = st.number_input("Hectares", min_value=0.1, max_value=100.0, value=2.0, step=0.1)
+    nursery_area = st.number_input("Surface pépinière (cents)", min_value=0.0, value=50.0, step=5.0)
+    seedrate = st.number_input("Taux de semis (kg)", min_value=10.0, max_value=100.0, value=40.0, step=5.0)
 
 with col3:
-    st.subheader("💊 Pratiques Culturales")
-    nursery_type = st.selectbox("Type de pépinière", ["wet", "dry"])
-    
-    fertilizer_level = st.select_slider(
-        "Niveau d'intrants",
-        options=["Faible", "Moyen", "Élevé"],
-        value="Moyen"
-    )
-    
-    irrigation = st.select_slider(
-        "Disponibilité irrigation",
-        options=["Limitée", "Moyenne", "Bonne"],
-        value="Moyenne"
-    )
+    st.subheader("💊 Intrants")
+    dap_20days = st.number_input("DAP 20 jours (kg)", min_value=0.0, value=50.0, step=5.0)
+    urea_40days = st.number_input("Urée 40 jours (kg)", min_value=0.0, value=60.0, step=5.0)
+    potash_50days = st.number_input("Potasse 50 jours (kg)", min_value=0.0, value=40.0, step=5.0)
 
 st.markdown("---")
 
@@ -146,16 +147,16 @@ model_choice = st.selectbox(
     "Choisissez le modèle",
     list(models.keys()),
     index=0,
-    help="XGBoost offre la meilleure précision (87%)"
+    help="XGBoost offre la meilleure précision (88.7%)"
 )
 
 # Performances
 performance_metrics = {
-    'XGBoost': {'Accuracy': 0.87, 'F1-Score': 0.87, 'ROC-AUC': 0.87},
-    'Random Forest': {'Accuracy': 0.80, 'F1-Score': 0.80, 'ROC-AUC': 0.80},
-    'Logistic Regression': {'Accuracy': 0.75, 'F1-Score': 0.75, 'ROC-AUC': 0.75},
-    'KNN': {'Accuracy': 0.72, 'F1-Score': 0.72, 'ROC-AUC': 0.72},
-    'Decision Tree': {'Accuracy': 0.70, 'F1-Score': 0.70, 'ROC-AUC': 0.70}
+    'XGBoost': {'Accuracy': 0.887, 'F1-Score': 0.887, 'ROC-AUC': 0.956},
+    'Random Forest': {'Accuracy': 0.805, 'F1-Score': 0.805, 'ROC-AUC': 0.920},
+    'Logistic Regression': {'Accuracy': 0.656, 'F1-Score': 0.608, 'ROC-AUC': 0.812},
+    'KNN': {'Accuracy': 0.396, 'F1-Score': 0.401, 'ROC-AUC': 0.559},
+    'Decision Tree': {'Accuracy': 0.634, 'F1-Score': 0.630, 'ROC-AUC': 0.814}
 }
 
 if model_choice in performance_metrics:
@@ -163,7 +164,7 @@ if model_choice in performance_metrics:
     col1, col2, col3 = st.columns(3)
     col1.metric("Précision", f"{metrics['Accuracy']:.1%}")
     col2.metric("F1-Score", f"{metrics['F1-Score']:.1%}")
-    col3.metric("ROC-AUC", f"{metrics['ROC-AUC']:.2f}")
+    col3.metric("ROC-AUC", f"{metrics['ROC-AUC']:.3f}")
 
 st.markdown("---")
 
@@ -171,27 +172,76 @@ st.markdown("---")
 if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_width=True):
     if model_choice in models:
         try:
-            # Convertir les inputs en features numériques
-            fertilizer_map = {"Faible": 1, "Moyen": 2, "Élevé": 3}
-            irrigation_map = {"Limitée": 1, "Moyenne": 2, "Bonne": 3}
+            # Créer un DataFrame avec les VRAIES colonnes du dataset
+            # On commence par créer une ligne avec des valeurs par défaut basées sur les médianes
             
-            # Préparer les données (adapter selon vos features réelles)
-            input_data = pd.DataFrame({
-                'Hectares': [hectares],
-                'Nursery_Area': [nursery_area],
-                'Avg_Rainfall': [avg_rainfall],
-                'Avg_Temp_Min': [avg_temp_min],
-                'Avg_Temp_Max': [avg_temp_max],
-                'Humidity': [humidity],
-                'Fertilizer_Level': [fertilizer_map[fertilizer_level]],
-                'Irrigation': [irrigation_map[irrigation]]
-            })
+            # Identifier la colonne de variété
+            variety_col = None
+            for col in training_df.columns:
+                if 'variety' in col.lower():
+                    variety_col = col
+                    break
+            
+            if variety_col is None:
+                st.error("❌ Impossible de trouver la colonne 'Variety' dans le dataset")
+                st.stop()
+            
+            # Créer un DataFrame avec les médianes pour toutes les features
+            X_template = training_df.drop(variety_col, axis=1)
+            
+            # Créer une ligne avec les médianes pour les colonnes numériques
+            new_row = {}
+            for col in X_template.columns:
+                if X_template[col].dtype in [np.float64, np.int64]:
+                    new_row[col] = X_template[col].median()
+                else:
+                    new_row[col] = X_template[col].mode()[0] if len(X_template[col].mode()) > 0 else X_template[col].iloc[0]
+            
+            # Remplacer par les valeurs saisies par l'utilisateur
+            new_row['Hectares '] = hectares  # Attention à l'espace
+            new_row['Nursery area (Cents)'] = nursery_area
+            new_row['Seedrate(in Kg)'] = seedrate
+            new_row['DAP_20days'] = dap_20days
+            new_row['Urea_40Days'] = urea_40days
+            new_row['Potassh_50Days'] = potash_50days
+            
+            # Variables catégorielles
+            new_row['Agriblock'] = agriblock
+            new_row['Soil Types'] = soil_type
+            new_row['Nursery'] = nursery_type
+            
+            # Créer DataFrame
+            input_df = pd.DataFrame([new_row])
+            
+            # Encodage one-hot des variables catégorielles (comme lors de l'entraînement)
+            categorical_features = input_df.select_dtypes(include=['object']).columns.tolist()
+            if categorical_features:
+                input_encoded = pd.get_dummies(input_df, columns=categorical_features, drop_first=False, dtype=int)
+            else:
+                input_encoded = input_df
+            
+            # S'assurer que toutes les colonnes d'entraînement sont présentes
+            # Le modèle a été entraîné avec certaines colonnes, on doit les avoir toutes
+            X_train_cols = training_df.drop(variety_col, axis=1).columns.tolist()
+            categorical_features_train = [c for c in X_train_cols if training_df[c].dtype == 'object']
+            
+            # Recréer l'encodage complet
+            X_train_sample = training_df.drop(variety_col, axis=1).head(1)
+            X_train_encoded = pd.get_dummies(X_train_sample, columns=categorical_features_train, drop_first=False, dtype=int)
+            
+            # Ajouter les colonnes manquantes avec des 0
+            for col in X_train_encoded.columns:
+                if col not in input_encoded.columns:
+                    input_encoded[col] = 0
+            
+            # Garder uniquement les colonnes du modèle dans le bon ordre
+            input_encoded = input_encoded[X_train_encoded.columns]
             
             # Normalisation
             if scaler is not None:
-                input_scaled = scaler.transform(input_data)
+                input_scaled = scaler.transform(input_encoded)
             else:
-                input_scaled = input_data.values
+                input_scaled = input_encoded.values
             
             # Prédiction
             prediction = models[model_choice].predict(input_scaled)[0]
@@ -200,7 +250,7 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
             if hasattr(models[model_choice], 'predict_proba'):
                 probas = models[model_choice].predict_proba(input_scaled)[0]
             else:
-                probas = [0.33, 0.33, 0.34]  # Fallback
+                probas = np.array([0.33, 0.33, 0.34])  # Fallback
             
             recommended_variety = VARIETY_NAMES[prediction]
             variety_info = VARIETY_INFO[recommended_variety]
@@ -291,20 +341,17 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
             elif soil_type == "alluvial" and recommended_variety == "CO_43":
                 recommendations.append("✅ Parfait ! CO_43 est idéal pour les sols alluviaux")
             
-            if humidity > 75 and recommended_variety == "Ponmani":
-                recommendations.append("✅ L'humidité élevée favorisera le développement de Ponmani")
+            if nursery_type == "wet" and recommended_variety == "Ponmani":
+                recommendations.append("✅ La pépinière humide favorisera le développement de Ponmani")
             
-            if fertilizer_level == "Élevé" and recommended_variety == "Delux Ponni":
+            if dap_20days > 50 and recommended_variety == "Delux Ponni":
                 recommendations.append("✅ Delux Ponni répondra bien aux apports élevés d'engrais")
-            
-            if irrigation == "Bonne":
-                recommendations.append("💧 Votre bonne disponibilité en eau optimisera le rendement")
-            elif irrigation == "Limitée":
-                recommendations.append("💧 Considérez CO_43 si l'irrigation reste limitée (plus résistant)")
             
             if recommendations:
                 for rec in recommendations:
                     st.success(rec)
+            else:
+                st.info("💡 Suivez les bonnes pratiques culturales pour optimiser votre rendement")
             
             # Alternatives
             st.markdown("### 🔄 Variétés Alternatives")
@@ -328,6 +375,9 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
         except Exception as e:
             st.error(f"❌ Erreur : {str(e)}")
             st.info("Vérifiez que tous les champs sont correctement remplis")
+            import traceback
+            with st.expander("Détails de l'erreur"):
+                st.code(traceback.format_exc())
     else:
         st.error("Modèle non disponible")
 
@@ -359,12 +409,12 @@ with st.expander("ℹ️ À propos des variétés"):
 with st.expander("📈 Performance des modèles"):
     st.write("""
     **XGBoost** (Recommandé)
-    - Précision : 87%
+    - Précision : 88.7%
     - Meilleure capacité à capturer les interactions complexes
     - Robuste aux données manquantes
     
     **Random Forest**
-    - Précision : 80%
+    - Précision : 80.5%
     - Bon compromis précision/interprétabilité
     - Moins sensible au surapprentissage
     
