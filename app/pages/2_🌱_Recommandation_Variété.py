@@ -38,18 +38,30 @@ def load_classification_models():
     
     return models, scaler
 
-# Charger le dataset nettoyé pour obtenir les colonnes exactes
 @st.cache_data
-def load_training_data():
-    """Charge les données d'entraînement pour obtenir la structure"""
+def load_training_columns():
+    """Charge les colonnes du dataset d'entraînement"""
     try:
         df = pd.read_csv("data/cleaned_paddydataset.csv")
-        return df
+        # Trouver la colonne Variety
+        variety_col = None
+        for col in df.columns:
+            if 'variety' in col.lower():
+                variety_col = col
+                break
+        
+        if variety_col:
+            # Retourner X (sans Variety) et les colonnes après encodage
+            X = df.drop(variety_col, axis=1)
+            categorical_features = X.select_dtypes(include=['object']).columns.tolist()
+            X_encoded = pd.get_dummies(X, columns=categorical_features, drop_first=False, dtype=int)
+            return X_encoded.columns.tolist(), df
+        return None, None
     except:
-        return None
+        return None, None
 
 models, scaler = load_classification_models()
-training_df = load_training_data()
+training_columns, training_df = load_training_columns()
 
 # Mapping des variétés
 VARIETY_NAMES = {
@@ -110,11 +122,11 @@ Cette page vous aide à choisir parmi 3 variétés de riz :
 Remplissez les informations ci-dessous pour obtenir une recommandation personnalisée.
 """)
 
-if training_df is None:
+if training_df is None or training_columns is None:
     st.error("❌ Impossible de charger les données d'entraînement. Vérifiez que le fichier `data/cleaned_paddydataset.csv` existe.")
     st.stop()
 
-# Formulaire simplifié
+# Formulaire simplifié avec les VRAIES colonnes
 st.header("📝 Informations sur votre Parcelle")
 
 col1, col2, col3 = st.columns(3)
@@ -128,16 +140,21 @@ with col1:
     nursery_type = st.selectbox("Type de pépinière", ["wet", "dry"])
 
 with col2:
-    st.subheader("📏 Parcelle")
+    st.subheader("📏 Parcelle & Intrants Basiques")
     hectares = st.number_input("Hectares", min_value=0.1, max_value=100.0, value=2.0, step=0.1)
     nursery_area = st.number_input("Surface pépinière (cents)", min_value=0.0, value=50.0, step=5.0)
     seedrate = st.number_input("Taux de semis (kg)", min_value=10.0, max_value=100.0, value=40.0, step=5.0)
+    lp_mainfield = st.number_input("LP champ principal (tonnes)", min_value=0.0, value=5.0, step=0.5)
+    lp_nursery = st.number_input("LP pépinière (tonnes)", min_value=0.0, value=2.0, step=0.5)
 
 with col3:
-    st.subheader("💊 Intrants")
+    st.subheader("💊 Engrais & Pesticides")
     dap_20days = st.number_input("DAP 20 jours (kg)", min_value=0.0, value=50.0, step=5.0)
     urea_40days = st.number_input("Urée 40 jours (kg)", min_value=0.0, value=60.0, step=5.0)
     potash_50days = st.number_input("Potasse 50 jours (kg)", min_value=0.0, value=40.0, step=5.0)
+    micronutrients_70days = st.number_input("Micronutriments 70 jours (kg)", min_value=0.0, value=10.0, step=1.0)
+    weed_herbicide = st.number_input("Herbicide 28 jours (ml)", min_value=0.0, value=300.0, step=50.0)
+    pesticide_60days = st.number_input("Pesticide 60 jours (ml)", min_value=0.0, value=500.0, step=50.0)
 
 st.markdown("---")
 
@@ -172,70 +189,53 @@ st.markdown("---")
 if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_width=True):
     if model_choice in models:
         try:
-            # Créer un DataFrame avec les VRAIES colonnes du dataset
-            # On commence par créer une ligne avec des valeurs par défaut basées sur les médianes
-            
-            # Identifier la colonne de variété
-            variety_col = None
+            # Créer un DataFrame avec les médianes pour toutes les colonnes
+            median_values = {}
             for col in training_df.columns:
-                if 'variety' in col.lower():
-                    variety_col = col
-                    break
+                if col.lower() not in ['variety', 'paddy yield(in kg)']:
+                    if training_df[col].dtype in [np.float64, np.int64]:
+                        median_values[col] = training_df[col].median()
+                    else:
+                        median_values[col] = training_df[col].mode()[0] if len(training_df[col].mode()) > 0 else training_df[col].iloc[0]
             
-            if variety_col is None:
-                st.error("❌ Impossible de trouver la colonne 'Variety' dans le dataset")
-                st.stop()
+            # Remplacer par les valeurs saisies (avec les VRAIS noms de colonnes)
+            user_input = {
+                'Hectares ': hectares,  # Attention à l'espace !
+                'Agriblock': agriblock,
+                'Soil Types': soil_type,
+                'Seedrate(in Kg)': seedrate,
+                'LP_Mainfield(in Tonnes)': lp_mainfield,
+                'Nursery': nursery_type,
+                'Nursery area (Cents)': nursery_area,
+                'LP_nurseryarea(in Tonnes)': lp_nursery,
+                'DAP_20days': dap_20days,
+                'Weed28D_thiobencarb': weed_herbicide,
+                'Urea_40Days': urea_40days,
+                'Potassh_50Days': potash_50days,
+                'Micronutrients_70Days': micronutrients_70days,
+                'Pest_60Day(in ml)': pesticide_60days
+            }
             
-            # Créer un DataFrame avec les médianes pour toutes les features
-            X_template = training_df.drop(variety_col, axis=1)
-            
-            # Créer une ligne avec les médianes pour les colonnes numériques
-            new_row = {}
-            for col in X_template.columns:
-                if X_template[col].dtype in [np.float64, np.int64]:
-                    new_row[col] = X_template[col].median()
-                else:
-                    new_row[col] = X_template[col].mode()[0] if len(X_template[col].mode()) > 0 else X_template[col].iloc[0]
-            
-            # Remplacer par les valeurs saisies par l'utilisateur
-            new_row['Hectares '] = hectares  # Attention à l'espace
-            new_row['Nursery area (Cents)'] = nursery_area
-            new_row['Seedrate(in Kg)'] = seedrate
-            new_row['DAP_20days'] = dap_20days
-            new_row['Urea_40Days'] = urea_40days
-            new_row['Potassh_50Days'] = potash_50days
-            
-            # Variables catégorielles
-            new_row['Agriblock'] = agriblock
-            new_row['Soil Types'] = soil_type
-            new_row['Nursery'] = nursery_type
+            # Fusionner avec les médianes
+            median_values.update(user_input)
             
             # Créer DataFrame
-            input_df = pd.DataFrame([new_row])
+            input_df = pd.DataFrame([median_values])
             
-            # Encodage one-hot des variables catégorielles (comme lors de l'entraînement)
+            # Encodage one-hot des variables catégorielles
             categorical_features = input_df.select_dtypes(include=['object']).columns.tolist()
             if categorical_features:
                 input_encoded = pd.get_dummies(input_df, columns=categorical_features, drop_first=False, dtype=int)
             else:
                 input_encoded = input_df
             
-            # S'assurer que toutes les colonnes d'entraînement sont présentes
-            # Le modèle a été entraîné avec certaines colonnes, on doit les avoir toutes
-            X_train_cols = training_df.drop(variety_col, axis=1).columns.tolist()
-            categorical_features_train = [c for c in X_train_cols if training_df[c].dtype == 'object']
-            
-            # Recréer l'encodage complet
-            X_train_sample = training_df.drop(variety_col, axis=1).head(1)
-            X_train_encoded = pd.get_dummies(X_train_sample, columns=categorical_features_train, drop_first=False, dtype=int)
-            
             # Ajouter les colonnes manquantes avec des 0
-            for col in X_train_encoded.columns:
+            for col in training_columns:
                 if col not in input_encoded.columns:
                     input_encoded[col] = 0
             
             # Garder uniquement les colonnes du modèle dans le bon ordre
-            input_encoded = input_encoded[X_train_encoded.columns]
+            input_encoded = input_encoded[training_columns]
             
             # Normalisation
             if scaler is not None:
@@ -246,11 +246,11 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
             # Prédiction
             prediction = models[model_choice].predict(input_scaled)[0]
             
-            # Probabilités (si disponible)
+            # Probabilités
             if hasattr(models[model_choice], 'predict_proba'):
                 probas = models[model_choice].predict_proba(input_scaled)[0]
             else:
-                probas = np.array([0.33, 0.33, 0.34])  # Fallback
+                probas = np.array([0.33, 0.33, 0.34])
             
             recommended_variety = VARIETY_NAMES[prediction]
             variety_info = VARIETY_INFO[recommended_variety]
@@ -286,7 +286,7 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
             
             st.markdown("---")
             
-            # Caractéristiques de la variété recommandée
+            # Caractéristiques et probabilités
             col1, col2 = st.columns([1, 1])
             
             with col1:
@@ -356,10 +356,9 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
             # Alternatives
             st.markdown("### 🔄 Variétés Alternatives")
             
-            # Trier les probabilités
             sorted_idx = np.argsort(probas)[::-1]
             
-            for idx in sorted_idx[1:3]:  # Les 2 suivantes
+            for idx in sorted_idx[1:3]:
                 variety_name = VARIETY_NAMES[idx]
                 prob = probas[idx] * 100
                 info = VARIETY_INFO[variety_name]
@@ -374,7 +373,6 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
             
         except Exception as e:
             st.error(f"❌ Erreur : {str(e)}")
-            st.info("Vérifiez que tous les champs sont correctement remplis")
             import traceback
             with st.expander("Détails de l'erreur"):
                 st.code(traceback.format_exc())
