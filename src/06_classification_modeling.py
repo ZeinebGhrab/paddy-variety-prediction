@@ -1,6 +1,6 @@
 """
 Script pour entraîner et sauvegarder tous les modèles de classification
-Ce script reprend exactement votre code original avec détection automatique de Variety
+Ce script reprend avec détection automatique de Variety
 """
 import pandas as pd
 import numpy as np
@@ -31,7 +31,7 @@ for col in df.columns:
         break
 
 if variety_col is None:
-    print("\n❌ ERREUR: Aucune colonne 'Variety' trouvée dans le dataset")
+    print("\nERREUR: Aucune colonne 'Variety' trouvée dans le dataset")
     print("Colonnes disponibles:")
     for col in df.columns:
         print(f"  - {col}")

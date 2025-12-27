@@ -1,6 +1,5 @@
 """
 Script pour entraîner et sauvegarder tous les modèles de régression
-Ce script reprend exactement votre code original
 """
 import pandas as pd
 import numpy as np

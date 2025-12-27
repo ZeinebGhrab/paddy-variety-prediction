@@ -103,14 +103,19 @@ def get_variety_characteristics(variety_name, variety_info):
     info = variety_info[variety_name]
     characteristics = []
     
-    # Rendement
+    # Calculer les seuils dynamiquement depuis TOUTES les variétés
+    all_means = [v['yield_stats']['mean'] for v in variety_info.values()]
+    threshold_high = np.percentile(all_means, 66.67)  # Top 33%
+    threshold_low = np.percentile(all_means, 33.33)   # Bottom 33%
+    
+    # Rendement avec classification dynamique
     yield_mean = info['yield_stats']['mean']
-    if yield_mean > 4000:
-        characteristics.append(f"✓ Rendement élevé: {yield_mean:.0f} kg/ha (moyenne)")
-    elif yield_mean > 3000:
-        characteristics.append(f"✓ Rendement moyen: {yield_mean:.0f} kg/ha (moyenne)")
+    if yield_mean >= threshold_high:
+        characteristics.append(f"✓ Rendement élevé: {yield_mean:.0f} kg/ha (top 33% des variétés)")
+    elif yield_mean >= threshold_low:
+        characteristics.append(f"✓ Rendement moyen: {yield_mean:.0f} kg/ha (33-66e percentile)")
     else:
-        characteristics.append(f"✓ Rendement: {yield_mean:.0f} kg/ha (moyenne)")
+        characteristics.append(f"✓ Rendement modéré: {yield_mean:.0f} kg/ha (bottom 33%)")
     
     # Plage de rendement
     yield_min = info['yield_stats']['q25']
