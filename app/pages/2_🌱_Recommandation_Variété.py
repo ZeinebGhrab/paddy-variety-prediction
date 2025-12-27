@@ -4,6 +4,22 @@ import numpy as np
 import pickle
 import plotly.graph_objects as go
 from pathlib import Path
+import sys
+sys.path.append('app/components')
+
+# Importer le module d'analyse dynamique
+try:
+    from data_analysis import (
+        load_and_analyze_data,
+        get_variety_characteristics,
+        get_variety_description,
+        get_recommendations_for_inputs,
+        get_optimal_practices_for_variety
+    )
+except:
+    # Si le module n'est pas trouvé, créer une version inline
+    st.error("Module d'analyse non trouvé. Assurez-vous que data_analysis.py est dans app/components/")
+    st.stop()
 
 st.set_page_config(page_title="Recommandation Variété", page_icon="🌱", layout="wide")
 
@@ -29,7 +45,6 @@ def load_classification_models():
         except Exception as e:
             st.warning(f"Impossible de charger {name}: {e}")
     
-    # Charger le scaler
     try:
         with open("models/scalers/scaler_classification.pkl", 'rb') as f:
             scaler = pickle.load(f)
@@ -43,7 +58,6 @@ def load_training_columns():
     """Charge les colonnes du dataset d'entraînement"""
     try:
         df = pd.read_csv("data/cleaned_paddydataset.csv")
-        # Trouver la colonne Variety
         variety_col = None
         for col in df.columns:
             if 'variety' in col.lower():
@@ -51,7 +65,6 @@ def load_training_columns():
                 break
         
         if variety_col:
-            # Retourner X (sans Variety) et les colonnes après encodage
             X = df.drop(variety_col, axis=1)
             categorical_features = X.select_dtypes(include=['object']).columns.tolist()
             X_encoded = pd.get_dummies(X, columns=categorical_features, drop_first=False, dtype=int)
@@ -60,73 +73,62 @@ def load_training_columns():
     except:
         return None, None
 
+# Charger les données et analyses
 models, scaler = load_classification_models()
 training_columns, training_df = load_training_columns()
+analysis_result = load_and_analyze_data()
 
-# Mapping des variétés
-VARIETY_NAMES = {
-    0: 'CO_43',
-    1: 'Ponmani', 
-    2: 'Delux Ponni'
+if analysis_result is None:
+    st.error("❌ Impossible de charger et analyser les données")
+    st.stop()
+
+varieties_info, full_df, variety_col, yield_col = analysis_result
+
+# Mapping des variétés (ordre alphabétique)
+variety_names_list = sorted(varieties_info.keys())
+VARIETY_NAMES = {i: name for i, name in enumerate(variety_names_list)}
+
+# Emojis et couleurs pour l'affichage
+VARIETY_COLORS = {
+    variety_names_list[0]: '#FF6B6B',
+    variety_names_list[1]: '#4ECDC4',
+    variety_names_list[2]: '#95E1D3' if len(variety_names_list) > 2 else '#FFA500'
 }
 
-VARIETY_INFO = {
-    'CO_43': {
-        'emoji': '🌾',
-        'description': 'Variété résistante, adaptée aux sols alluviaux et conditions sèches',
-        'characteristics': [
-            '✓ Résistance à la sécheresse',
-            '✓ Cycle de 130-135 jours',
-            '✓ Rendement moyen: 3500-4000 kg/ha',
-            '✓ Grains moyens à longs'
-        ],
-        'color': '#FF6B6B'
-    },
-    'Ponmani': {
-        'emoji': '🌿',
-        'description': 'Variété premium, préfère les sols argileux humides',
-        'characteristics': [
-            '✓ Qualité de grain excellente',
-            '✓ Cycle de 145-150 jours',
-            '✓ Rendement élevé: 4000-4500 kg/ha',
-            '✓ Préfère humidité élevée'
-        ],
-        'color': '#4ECDC4'
-    },
-    'Delux Ponni': {
-        'emoji': '⭐',
-        'description': 'Variété polyvalente, haut rendement',
-        'characteristics': [
-            '✓ Très bon rendement',
-            '✓ Cycle de 135-140 jours',
-            '✓ Rendement: 4200-4800 kg/ha',
-            '✓ Adaptable à différents sols'
-        ],
-        'color': '#95E1D3'
-    }
+VARIETY_EMOJIS = {
+    variety_names_list[0]: '🌾',
+    variety_names_list[1]: '🌿',
+    variety_names_list[2]: '⭐' if len(variety_names_list) > 2 else '🌱'
 }
 
 # Titre
-st.title("🌱 Recommandation de Variété de Riz")
+st.title("🌱 Recommandation de Variété de Riz - Analyse Dynamique")
 st.markdown("---")
 
-# Instructions
-st.info("""
-🎯 **Trouvez la variété parfaite pour votre parcelle !**
+# Info dynamique sur le dataset
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("📊 Parcelles Analysées", f"{len(full_df):,}")
+with col2:
+    st.metric("🌾 Variétés Disponibles", len(varieties_info))
+with col3:
+    avg_yield = full_df[yield_col].mean()
+    st.metric("📈 Rendement Moyen Global", f"{avg_yield:.0f} kg/ha")
 
-Cette page vous aide à choisir parmi 3 variétés de riz :
-- **CO_43** : Résistant et fiable
-- **Ponmani** : Qualité premium
-- **Delux Ponni** : Rendement maximal
+st.info(f"""
+🎯 **Trouvez la variété parfaite basée sur {len(full_df):,} parcelles réelles !**
 
-Remplissez les informations ci-dessous pour obtenir une recommandation personnalisée.
+Les variétés disponibles dans notre dataset :
+{', '.join([f'**{v}** ({varieties_info[v]["n_parcels"]} parcelles)' for v in variety_names_list])}
+
+Toutes les recommandations sont extraites des données réelles de culture.
 """)
 
 if training_df is None or training_columns is None:
-    st.error("❌ Impossible de charger les données d'entraînement. Vérifiez que le fichier `data/cleaned_paddydataset.csv` existe.")
+    st.error("❌ Impossible de charger les données d'entraînement.")
     st.stop()
 
-# Formulaire simplifié avec les VRAIES colonnes
+# Formulaire
 st.header("📝 Informations sur votre Parcelle")
 
 col1, col2, col3 = st.columns(3)
@@ -134,10 +136,13 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.subheader("🌍 Localisation & Sol")
     agriblock = st.selectbox("Bloc Agricole", [f"block_{i}" for i in range(1, 11)])
-    soil_type = st.selectbox("Type de Sol", 
-                             ["alluvial", "clay", "loamy", "sandy"],
-                             help="Alluvial: Léger, Clay: Argileux, Loamy: Limoneux, Sandy: Sableux")
-    nursery_type = st.selectbox("Type de pépinière", ["wet", "dry"])
+    
+    # Sols disponibles dans le dataset
+    soil_types = full_df[[c for c in full_df.columns if 'soil' in c.lower()][0]].unique()
+    soil_type = st.selectbox("Type de Sol", sorted(soil_types))
+    
+    nursery_types = full_df[[c for c in full_df.columns if 'nursery' in c.lower() and 'area' not in c.lower()][0]].unique()
+    nursery_type = st.selectbox("Type de pépinière", sorted(nursery_types))
 
 with col2:
     st.subheader("📏 Parcelle & Intrants Basiques")
@@ -163,8 +168,7 @@ st.header("🤖 Modèle de Recommandation")
 model_choice = st.selectbox(
     "Choisissez le modèle",
     list(models.keys()),
-    index=0,
-    help="XGBoost offre la meilleure précision (88.7%)"
+    index=0
 )
 
 # Performances
@@ -189,7 +193,7 @@ st.markdown("---")
 if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_width=True):
     if model_choice in models:
         try:
-            # Créer un DataFrame avec les médianes pour toutes les colonnes
+            # Préparer les données
             median_values = {}
             for col in training_df.columns:
                 if col.lower() not in ['variety', 'paddy yield(in kg)']:
@@ -198,9 +202,8 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
                     else:
                         median_values[col] = training_df[col].mode()[0] if len(training_df[col].mode()) > 0 else training_df[col].iloc[0]
             
-            # Remplacer par les valeurs saisies (avec les VRAIS noms de colonnes)
             user_input = {
-                'Hectares ': hectares,  # Attention à l'espace !
+                'Hectares ': hectares,
                 'Agriblock': agriblock,
                 'Soil Types': soil_type,
                 'Seedrate(in Kg)': seedrate,
@@ -216,28 +219,21 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
                 'Pest_60Day(in ml)': pesticide_60days
             }
             
-            # Fusionner avec les médianes
             median_values.update(user_input)
-            
-            # Créer DataFrame
             input_df = pd.DataFrame([median_values])
             
-            # Encodage one-hot des variables catégorielles
             categorical_features = input_df.select_dtypes(include=['object']).columns.tolist()
             if categorical_features:
                 input_encoded = pd.get_dummies(input_df, columns=categorical_features, drop_first=False, dtype=int)
             else:
                 input_encoded = input_df
             
-            # Ajouter les colonnes manquantes avec des 0
             for col in training_columns:
                 if col not in input_encoded.columns:
                     input_encoded[col] = 0
             
-            # Garder uniquement les colonnes du modèle dans le bon ordre
             input_encoded = input_encoded[training_columns]
             
-            # Normalisation
             if scaler is not None:
                 input_scaled = scaler.transform(input_encoded)
             else:
@@ -246,30 +242,33 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
             # Prédiction
             prediction = models[model_choice].predict(input_scaled)[0]
             
-            # Probabilités
             if hasattr(models[model_choice], 'predict_proba'):
                 probas = models[model_choice].predict_proba(input_scaled)[0]
             else:
-                probas = np.array([0.33, 0.33, 0.34])
+                probas = np.array([1/len(VARIETY_NAMES)] * len(VARIETY_NAMES))
             
             recommended_variety = VARIETY_NAMES[prediction]
-            variety_info = VARIETY_INFO[recommended_variety]
             
-            # Affichage du résultat
-            st.success("✅ Recommandation générée avec succès !")
+            # Obtenir les infos dynamiques
+            variety_description = get_variety_description(recommended_variety, varieties_info)
+            variety_characteristics = get_variety_characteristics(recommended_variety, varieties_info)
+            variety_color = VARIETY_COLORS.get(recommended_variety, '#4ECDC4')
+            variety_emoji = VARIETY_EMOJIS.get(recommended_variety, '🌾')
             
-            # Grande carte de recommandation
+            st.success("✅ Recommandation générée avec succès basée sur les données réelles !")
+            
+            # Carte de recommandation
             st.markdown(f"""
-            <div style="background: linear-gradient(135deg, {variety_info['color']} 0%, #764ba2 100%); 
+            <div style="background: linear-gradient(135deg, {variety_color} 0%, #764ba2 100%); 
                         padding: 3rem; border-radius: 20px; text-align: center; margin: 2rem 0;">
                 <h1 style="color: white; font-size: 4rem; margin: 0;">
-                    {variety_info['emoji']} {recommended_variety}
+                    {variety_emoji} {recommended_variety}
                 </h1>
                 <p style="color: white; font-size: 1.5rem; margin: 1rem 0;">
                     Variété Recommandée
                 </p>
                 <p style="color: white; font-size: 1.2rem; opacity: 0.9;">
-                    {variety_info['description']}
+                    {variety_description}
                 </p>
             </div>
             """, unsafe_allow_html=True)
@@ -290,9 +289,16 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
             col1, col2 = st.columns([1, 1])
             
             with col1:
-                st.markdown("### 🌾 Caractéristiques")
-                for char in variety_info['characteristics']:
+                st.markdown("### 🌾 Caractéristiques (Données Réelles)")
+                for char in variety_characteristics:
                     st.markdown(f"**{char}**")
+                
+                # Statistiques supplémentaires
+                st.markdown("#### 📊 Statistiques du Dataset")
+                info = varieties_info[recommended_variety]
+                st.write(f"- Nombre de parcelles: **{info['n_parcels']}**")
+                st.write(f"- Rendement médian: **{info['yield_stats']['median']:.0f} kg/ha**")
+                st.write(f"- Rendement max observé: **{info['yield_stats']['max']:.0f} kg/ha**")
             
             with col2:
                 st.markdown("### 📊 Distribution des Probabilités")
@@ -301,7 +307,7 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
                     go.Bar(
                         x=list(VARIETY_NAMES.values()),
                         y=probas * 100,
-                        marker_color=[VARIETY_INFO[v]['color'] for v in VARIETY_NAMES.values()],
+                        marker_color=[VARIETY_COLORS.get(v, '#4ECDC4') for v in VARIETY_NAMES.values()],
                         text=[f"{p:.1f}%" for p in probas * 100],
                         textposition='auto',
                     )
@@ -318,58 +324,60 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
             
             st.markdown("---")
             
-            # Comparaison des 3 variétés
-            st.markdown("### 📊 Comparaison des Variétés")
+            # Comparaison basée sur données réelles
+            st.markdown("### 📊 Comparaison des Variétés (Données Réelles)")
             
-            comparison_df = pd.DataFrame({
-                'Variété': ['CO_43', 'Ponmani', 'Delux Ponni'],
-                'Probabilité (%)': [f"{p:.1f}%" for p in probas * 100],
-                'Rendement Moyen': ['3500-4000', '4000-4500', '4200-4800'],
-                'Cycle (jours)': ['130-135', '145-150', '135-140'],
-                'Sol Préféré': ['Alluvial', 'Argileux', 'Polyvalent']
-            })
+            comparison_data = []
+            for variety in VARIETY_NAMES.values():
+                info = varieties_info[variety]
+                comparison_data.append({
+                    'Variété': variety,
+                    'Probabilité': f"{probas[list(VARIETY_NAMES.values()).index(variety)] * 100:.1f}%",
+                    'Rendement Moyen': f"{info['yield_stats']['mean']:.0f} kg/ha",
+                    'Rendement Médian': f"{info['yield_stats']['median']:.0f} kg/ha",
+                    'Sol Préféré': info['preferred_soil'].capitalize(),
+                    'Parcelles': info['n_parcels']
+                })
             
+            comparison_df = pd.DataFrame(comparison_data)
             st.dataframe(comparison_df, use_container_width=True, hide_index=True)
             
-            # Recommandations complémentaires
-            st.markdown("### 💡 Conseils Personnalisés")
+            # Recommandations personnalisées
+            st.markdown("### 💡 Conseils Personnalisés (Basés sur le Top 10%)")
             
-            recommendations = []
+            user_inputs_dict = {
+                'dap_20days': dap_20days,
+                'urea_40days': urea_40days,
+                'potash_50days': potash_50days,
+                'micronutrients_70days': micronutrients_70days,
+                'hectares': hectares,
+                'seedrate': seedrate,
+                'soil_type': soil_type
+            }
             
-            if soil_type == "clay" and recommended_variety == "Ponmani":
-                recommendations.append("✅ Excellent choix ! Ponmani prospère dans les sols argileux")
-            elif soil_type == "alluvial" and recommended_variety == "CO_43":
-                recommendations.append("✅ Parfait ! CO_43 est idéal pour les sols alluviaux")
+            recommendations = get_recommendations_for_inputs(
+                user_inputs_dict, 
+                varieties_info, 
+                recommended_variety
+            )
             
-            if nursery_type == "wet" and recommended_variety == "Ponmani":
-                recommendations.append("✅ La pépinière humide favorisera le développement de Ponmani")
-            
-            if dap_20days > 50 and recommended_variety == "Delux Ponni":
-                recommendations.append("✅ Delux Ponni répondra bien aux apports élevés d'engrais")
-            
-            if recommendations:
-                for rec in recommendations:
+            for rec in recommendations:
+                if rec.startswith('✅'):
                     st.success(rec)
-            else:
-                st.info("💡 Suivez les bonnes pratiques culturales pour optimiser votre rendement")
+                elif rec.startswith('⚠️'):
+                    st.warning(rec)
+                else:
+                    st.info(rec)
             
-            # Alternatives
-            st.markdown("### 🔄 Variétés Alternatives")
-            
-            sorted_idx = np.argsort(probas)[::-1]
-            
-            for idx in sorted_idx[1:3]:
-                variety_name = VARIETY_NAMES[idx]
-                prob = probas[idx] * 100
-                info = VARIETY_INFO[variety_name]
+            # Pratiques optimales
+            with st.expander("📈 Voir les Pratiques Optimales du Top 10%"):
+                optimal = get_optimal_practices_for_variety(recommended_variety, varieties_info, n_top=10)
                 
-                st.markdown(f"""
-                <div style="background: #F5F5F5; padding: 1rem; border-radius: 10px; margin: 0.5rem 0; 
-                            border-left: 4px solid {info['color']};">
-                    <h4 style="margin: 0;">{info['emoji']} {variety_name} ({prob:.1f}%)</h4>
-                    <p style="margin: 0.5rem 0; color: #666;">{info['description']}</p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.write(f"**Intrants moyens des 10% meilleures parcelles de {recommended_variety}:**")
+                
+                for key, values in optimal.items():
+                    if 'DAP' in key or 'Urea' in key or 'Potassh' in key or 'Micronutrients' in key:
+                        st.write(f"- **{key}**: {values['median']:.1f} (plage: {values['min']:.0f}-{values['max']:.0f})")
             
         except Exception as e:
             st.error(f"❌ Erreur : {str(e)}")
@@ -379,42 +387,26 @@ if st.button("🎯 Obtenir une Recommandation", type="primary", use_container_wi
     else:
         st.error("Modèle non disponible")
 
-# Informations complémentaires
-with st.expander("ℹ️ À propos des variétés"):
-    st.markdown("""
-    ### 🌾 CO_43
-    - **Origine** : Coimbatore (Inde)
-    - **Durée** : 130-135 jours
-    - **Rendement** : 3500-4000 kg/ha
-    - **Résistance** : Excellente résistance à la sécheresse
-    - **Sol idéal** : Alluvial, bien drainé
-    
-    ### 🌿 Ponmani
-    - **Origine** : Tamil Nadu (Inde)
-    - **Durée** : 145-150 jours
-    - **Rendement** : 4000-4500 kg/ha
-    - **Qualité** : Grain premium, très recherché
-    - **Sol idéal** : Argileux, riche en eau
-    
-    ### ⭐ Delux Ponni
-    - **Origine** : Hybride amélioré
-    - **Durée** : 135-140 jours
-    - **Rendement** : 4200-4800 kg/ha
-    - **Avantage** : Polyvalent, haut rendement
-    - **Sol idéal** : Tous types de sol
-    """)
+# Informations complémentaires dynamiques
+with st.expander("📊 Distribution des Variétés dans le Dataset"):
+    fig = go.Figure(data=[
+        go.Pie(
+            labels=list(varieties_info.keys()),
+            values=[info['n_parcels'] for info in varieties_info.values()],
+            marker_colors=[VARIETY_COLORS.get(v, '#4ECDC4') for v in varieties_info.keys()]
+        )
+    ])
+    fig.update_layout(title="Répartition des parcelles par variété")
+    st.plotly_chart(fig, use_container_width=True)
 
 with st.expander("📈 Performance des modèles"):
     st.write("""
+    Les modèles ont été entraînés sur les données réelles de votre dataset.
+    
     **XGBoost** (Recommandé)
-    - Précision : 88.7%
-    - Meilleure capacité à capturer les interactions complexes
+    - Le plus précis pour capturer les interactions complexes
     - Robuste aux données manquantes
     
-    **Random Forest**
-    - Précision : 80.5%
-    - Bon compromis précision/interprétabilité
-    - Moins sensible au surapprentissage
-    
-    Les modèles ont été validés sur 20% du dataset (split test).
+    Les recommandations et caractéristiques sont **extraites dynamiquement** 
+    du dataset, reflétant les conditions réelles de culture.
     """)
