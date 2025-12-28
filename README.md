@@ -14,9 +14,8 @@ Projet d'analyse de données agricoles combinant modélisation prédictive et se
 - [Structure du Projet](#-structure-du-projet)  
 - [Installation](#-installation)  
 - [Contribution](#-contribution)  
-- [Technologies](#-technologies)  
 - [Licence](#-licence)  
-- [À propos du développeur  ](#-a-propos-du-développeur)  
+- [À propos du développeur  ](#-a-propos-du-developpeur)  
 
 ---
 
@@ -198,7 +197,7 @@ git clone https://github.com/ZeinebGhrab/paddy-variety-prediction.git
 cd paddy-variety-prediction
 ```
 
-** 2. Créer un environnement virtuel (recommandé)**
+**2. Créer un environnement virtuel (recommandé)**
 ```bash
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
