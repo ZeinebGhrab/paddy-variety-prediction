@@ -226,5 +226,5 @@ Les contributions sont les bienvenues ! Pour contribuer :
 MIT License © Zeineb Ghrab
 
 ## 🙋 À propos du développeur  
-Réalisé avec passion par Zeineb Ghrab  
+Réalisée avec passion par Zeineb Ghrab  
 🎓 Ingénieure en Data Science | 🧠 Passionnée par les données, l'IA et le développement full-stack
