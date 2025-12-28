@@ -196,14 +196,17 @@ paddy-variety-prediction/
 # 1. Cloner le repository
 git clone https://github.com/ZeinebGhrab/paddy-variety-prediction.git
 cd paddy-variety-prediction
+```
 
 # 2. Créer un environnement virtuel (recommandé)
+```bash
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
-
+```
 # 3. Installer les dépendances
+```bash
 pip install -r requirements.txt
-
+```
 ---
 
 ## 🤝 Contribution
