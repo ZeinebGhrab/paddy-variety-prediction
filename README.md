@@ -15,7 +15,7 @@ Projet d'analyse de données agricoles combinant modélisation prédictive et se
 - [Installation](#-installation)  
 - [Contribution](#-contribution)  
 - [Licence](#-licence)  
-- [À propos du développeur  ](#-a-propos-du-developpeur)  
+- [À propos du développeur](#-a-propos-du-developpeur)  
 
 ---
 
@@ -163,20 +163,23 @@ paddy-variety-prediction/
 ├── data/                           # Données
 │   ├── paddydataset.csv            # Dataset original
 │   ├── noisy_paddydataset.csv      # Dataset avec bruit
+│   ├── paddy_dataset_fe.csv        # # Dataset après ingénierie des caractéristiques
 │   └── cleaned_paddydataset.csv    # Dataset nettoyé
 │
 │
 ├── src/                            # Scripts de traitement
-│   ├── 01_data_generation.py       # Génération données bruitées
-│   ├── 02_eda.py                   # Analyse exploratoire
-│   ├── 03_data_cleaning.py         # Nettoyage des données
-│   ├── 04_feature_engineering.py   # Engineering des features
-│   ├── 05_regression_modeling.py   # Modélisation régression
-│   └──  06_clustering_modeling.py   # Modélisation clustering
+│   ├── 01_eda.py                   # Analyse exploratoire
+│   ├── 02_data_cleaning.py         # Nettoyage des données
+│   ├── 02_feature_engineering.py   # Engineering des features
+│   ├── 04_regression_modeling.py   # Modélisation régression
+│   └── 05_clustering_modeling.py   # Modélisation clustering
 │                    
+├── results/ 
+│   ├── cluster_assignments.scv     # Attribution des parcelles aux clusters   
+│   ├── cluster_centroids.csv       # Profils moyens de chaque cluster 
+│   └── cluster_statistics.csv      # Statistiques détaillées par cluster
 │
-│
-├── requirements.txt              # Dépendances
+├── requirements.txt                # Dépendances
 └── README.md                     
 
 ```
