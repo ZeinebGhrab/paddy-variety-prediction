@@ -1,222 +1,210 @@
-# 🌾 Système d'Aide à la Décision Agricole - Culture du Riz
+# 🌾 Paddy Rice Yield Prediction & Farmer Profiling
 
-## 📋 Description
+Projet d'analyse de données agricoles combinant modélisation prédictive et segmentation pour optimiser la production rizicole en Inde.
 
-Application complète d'aide à la décision pour les agriculteurs cultivant le riz. Le système utilise des modèles de Machine Learning pour :
-- **Prédire le rendement** des cultures
-- **Recommander la variété** de riz optimale
-- **Analyser les données** agronomiques
+---
 
-## 🚀 Installation
+## 📋 Table des Matières
 
-### Prérequis
-- Python 3.8 ou supérieur
-- pip
+- [Vue d'ensemble](#-vue-densemble)  
+- [Objectifs du Projet](#-objectifs-du-projet)  
+- [Données](#-données)  
+- [Méthodologie](#-méthodologie)  
+- [Résultats Clés](#-résultats-clés)  
+- [Structure du Projet](#-structure-du-projet)  
+- [Installation](#-installation)  
+- [Utilisation](#-utilisation)  
+- [Technologies](#-technologies)  
+- [Auteurs](#-auteurs)  
+- [Licence](#-licence)  
 
-### Étapes d'installation
+---
 
-1. **Cloner le repository**
-```bash
-git clone https://github.com/ZeinebGhrab/paddy-variety-prediction.git
-cd paddy_project
+## 🎯 Vue d'ensemble
+
+Ce projet analyse 2 790 parcelles de riz en Inde pour :
+
+- Prédire le rendement (kg/parcelle) à partir des pratiques agricoles  
+- Identifier 6 profils d'agriculteurs distincts via clustering  
+
+Le rendement varie de 5 000 à 40 000 kg/parcelle, reflétant des stratégies de gestion très contrastées. L'objectif est de transformer ces données en leviers d'optimisation concrète pour améliorer la productivité agricole.
+
+---
+
+## 🎯 Objectifs du Projet
+
+### 1️⃣ Modélisation Prédictive (Régression)
+
+- Construire un modèle pour prédire le rendement en riz (variable cible : `Paddy yield(in Kg)`)  
+- Quantifier l'impact de chaque décision agricole (engrais, pesticides, irrigation)  
+- Identifier les variables les plus influentes sur la production  
+
+### 2️⃣ Segmentation des Agriculteurs (Clustering)
+
+- Découvrir des profils agricoles homogènes (intensif, optimal, économe...)  
+- Extraire des recommandations personnalisées par profil  
+- Détecter les anomalies (parcelles inefficaces malgré des intrants élevés)  
+
+---
+
+## 📊 Données
+
+**Source :** Dataset Paddy Rice (Inde) contenant 2 790 observations et 45 variables.  
+
+| Catégorie       | Exemples de Variables                      |
+|-----------------|-------------------------------------------|
+| Intrants        | DAP, Urée, Potasse, Pesticides, Micronutriments |
+| Pratiques       | Paille recyclée, Densité de semis, Surface cultivée |
+| Environnement   | Température (min/max), Pluviométrie (30j, 70j), Type de sol |
+| Rendement       | Paddy yield(in Kg) ⭐ (variable cible)     |
+
+**Fichiers de Données :**
+
+```
+data/
+├── paddydataset.csv
+├── noisy_paddydataset.csv
+├── cleaned_paddydataset.csv
+└── paddy_dataset_fe.csv
 ```
 
-2. **Créer un environnement virtuel**
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# ou
-venv\Scripts\activate  # Windows
-```
 
-3. **Installer les dépendances**
-```bash
-pip install -r requirements.txt
-```
+---
+
+## 🔬 Méthodologie
+
+### Phase 1 : Exploration & Nettoyage
+- EDA approfondie : distributions, corrélations, outliers  
+- Nettoyage : gestion des valeurs manquantes, détection d'anomalies  
+- Feature Engineering : création de variables dérivées (ratios, agrégations temporelles)  
+
+### Phase 2 : Modélisation Régression
+**Feature Selection :**
+- SelectKBest : sélection des 12 meilleures features  
+- Backward Elimination : sélection basée sur p-values (OLS)  
+
+**Modèles Testés :**
+- Régression Linéaire  
+- Lasso (L1)  
+- Ridge (L2)  
+- ElasticNet (L1 + L2)  
+- XGBoost Regressor ⭐  
+
+**Évaluation :**
+- RMSE, MAE, R²  
+- Validation croisée (5-fold)  
+- Analyse résiduelle  
+
+### Phase 3 : Clustering
+**Réduction Dimensionnelle :**
+- PCA : 47,5 % de variance expliquée avec 2 composantes  
+- UMAP : préservation de la structure non-linéaire  
+- t-SNE : visualisation des clusters  
+
+**Algorithmes :**
+- K-Means (principal)  
+- Clustering Hiérarchique  
+- GMM (Gaussian Mixture Model)  
+
+**Optimisation du Nombre de Clusters :**
+- Elbow Method + KneeLocator  
+- Silhouette Score  
+- BIC/AIC pour GMM  
+- Résultat optimal : k=6  
+
+**Interprétation :**
+- Analyse des centroïdes  
+- Heatmap des profils  
+- Decision Tree pour extraction de règles  
+
+---
+
+## 🏆 Résultats Clés
+
+### 📈 Régression : Prédiction du Rendement
+
+| Modèle          | RMSE Test | MAE Test | R² Test | Verdict |
+|-----------------|-----------|----------|---------|---------|
+| Linear Regression | 3130.25  | 1652.84  | 0.8754  | Bon     |
+| Lasso           | 3130.86  | 1652.96  | 0.8753  | Bon     |
+| Ridge           | 3130.13  | 1652.65  | 0.8754  | Bon     |
+| ElasticNet      | 3130.48  | 1652.72  | 0.8754  | Bon     |
+| XGBoost         | 2938.82  | 1550.29  | 0.8830  | 🥇 Meilleur |
+
+**Variables les Plus Importantes :**
+- Température maximale (J61-J90)  
+- Pluviométrie (70 jours)  
+- DAP (engrais phosphaté)  
+- Urée (fertilisant azoté)  
+- Paille recyclée  
+
+### 🔍 Clustering : 6 Profils Agricoles Identifiés
+
+| Cluster | Profil         | Effectif | Rendement Moyen | Caractéristiques                    |
+|---------|----------------|----------|----------------|-------------------------------------|
+| 0       | 🏆 Champion Intensif | 605      | 23 121 kg     | Intrants élevés, paille maximale    |
+| 5       | 🥈 Champion (variante) | 486      | 23 025 kg     | Similaire au Cluster 0              |
+| 3       | ⭐ Profil Optimal | 425      | 22 619 kg     | Bon rendement, moins de ressources  |
+| 1       | 📊 Standard     | 477      | 22 525 kg     | Pratiques moyennes                  |
+| 4       | 📊 Standard     | 386      | 22 525 kg     | Pratiques moyennes                  |
+| 2       | ⚠️ Économe      | 410      | 22 409 kg     | Sous-investissement en intrants     |
+
+**Score de Silhouette :**
+- K-Means : 0.3449  
+- Clustering Hiérarchique : 0.3337  
+- GMM : 0.3449  
+
+---
 
 ## 📁 Structure du Projet
 
 ```
 paddy-variety-prediction/
 │
-├── data/                          # Données
-│   ├── paddydataset.csv          # Dataset original
-│   ├── noisy_paddydataset.csv    # Dataset avec bruit
-│   └── cleaned_paddydataset.csv  # Dataset nettoyé
+├── data/                           # Données
+│   ├── paddydataset.csv            # Dataset original
+│   ├── noisy_paddydataset.csv      # Dataset avec bruit
+│   └── cleaned_paddydataset.csv    # Dataset nettoyé
 │
-├── models/                        # Modèles sauvegardés
-│   ├── regression/               # Modèles de régression
-│   ├── classification/           # Modèles de classification
-│   └── scalers/                  # Scalers
 │
-├── src/                          # Scripts de traitement
-│   ├── 01_data_generation.py    # Génération données bruitées
-│   ├── 02_eda.py                # Analyse exploratoire
-│   ├── 03_data_cleaning.py      # Nettoyage des données
-│   ├── 04_feature_engineering.py # Engineering des features
-│   ├── 05_regression_modeling.py # Modélisation régression
-│   ├── 06_classification_modeling.py # Modélisation classification
-│   └── utils.py                  # Utilitaires
+├── src/                            # Scripts de traitement
+│   ├── 01_data_generation.py       # Génération données bruitées
+│   ├── 02_eda.py                   # Analyse exploratoire
+│   ├── 03_data_cleaning.py         # Nettoyage des données
+│   ├── 04_feature_engineering.py   # Engineering des features
+│   ├── 05_regression_modeling.py   # Modélisation régression
+│   └──  06_clustering_modeling.py   # Modélisation clustering
+│                    
 │
-├── app/                          # Application Streamlit
-│   ├── streamlit_app.py         # Page principale
-│   └── pages/                    # Pages de l'application
-│       ├── 1_🌾_Prédiction_Rendement.py
-│       ├── 2_🌱_Recommandation_Variété.py
-│       └── 3_📊_Analyse_Données.py
 │
 ├── requirements.txt              # Dépendances
-└── README.md                     # Ce fichier
+└── README.md                     
+
 ```
 
-## 🎯 Utilisation
 
-### 1. Préparation des données
+---
 
+## 🛠️ Installation
+
+**Prérequis :**
+- Python 3.8+  
+- pip  
+
+**Étapes :**
 ```bash
-# Générer les données bruitées
-python src/01_data_generation.py
+# 1. Cloner le repository
+git clone https://github.com/ZeinebGhrab/paddy-variety-prediction.git
+cd paddy-variety-prediction
 
-# Analyse exploratoire
-python src/02_eda.py
+# 2. Créer un environnement virtuel (recommandé)
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Nettoyage
-python src/03_data_cleaning.py
-```
+# 3. Installer les dépendances
+pip install -r requirements.txt
 
-### 2. Entraînement des modèles
-
-```bash
-# Feature engineering
-python src/04_feature_engineering.py
-
-# Modèles de régression
-python src/05_regression_modeling.py
-
-# Modèles de classification
-python src/06_classification_modeling.py
-```
-
-### 3. Lancement de l'application
-
-```bash
-streamlit run app/streamlit_app.py
-```
-
-L'application sera accessible à l'adresse : `http://localhost:8501`
-
-## 📊 Modèles Disponibles
-
-### Régression (Prédiction de Rendement)
-- **Ridge Regression** (Recommandé)
-  - R² = 0.89
-  - RMSE = 2887 kg
-  - MAE = 1688 kg
-
-- **XGBoost Regressor**
-  - R² = 0.90
-  - RMSE = 2665 kg
-  - MAE = 1550 kg
-
-- Linear Regression, Lasso, ElasticNet
-
-### Classification (Recommandation de Variété)
-- **XGBoost Classifier** (Recommandé)
-  - Accuracy = 87%
-  - F1-Score = 0.87
-  - ROC-AUC = 0.87
-
-- Random Forest, Logistic Regression, KNN, Decision Tree
-
-## 🌱 Variétés de Riz
-
-### CO_43
-- Résistant à la sécheresse
-- Cycle : 130-135 jours
-- Rendement : 3500-4000 kg/ha
-- Sol idéal : Alluvial
-
-### Ponmani
-- Qualité premium
-- Cycle : 145-150 jours
-- Rendement : 4000-4500 kg/ha
-- Sol idéal : Argileux
-
-### Delux Ponni
-- Haut rendement
-- Cycle : 135-140 jours
-- Rendement : 4200-4800 kg/ha
-- Sol idéal : Polyvalent
-
-## 📈 Fonctionnalités de l'Application
-
-### Page 1 : Prédiction du Rendement
-- Saisie des données de la parcelle
-- Prédiction du rendement en kg
-- Recommandations personnalisées
-- Comparaison avec les moyennes
-
-### Page 2 : Recommandation de Variété
-- Analyse des conditions de culture
-- Recommandation de la variété optimale
-- Niveau de confiance
-- Comparaison des 3 variétés
-
-### Page 3 : Analyse des Données
-- Visualisations interactives
-- Statistiques descriptives
-- Corrélations
-- Export des résultats
-
-## 🔧 Configuration Avancée
-
-### Réentraîner les modèles
-
-Si vous souhaitez réentraîner les modèles avec de nouvelles données :
-
-```python
-from src.utils import save_model, save_scaler
-from sklearn.preprocessing import StandardScaler
-from xgboost import XGBRegressor
-
-# Entraîner votre modèle
-model = XGBRegressor()
-model.fit(X_train, y_train)
-
-# Sauvegarder
-save_model(model, 'xgboost_reg', model_type='regression')
-
-# Sauvegarder le scaler
-scaler = StandardScaler()
-scaler.fit(X_train)
-save_scaler(scaler, model_type='regression')
-```
-
-### Ajouter un nouveau modèle
-
-1. Entraîner et sauvegarder le modèle
-2. Ajouter les performances dans `performance_metrics`
-3. Ajouter dans le selectbox de l'interface
-
-## 📝 Variables d'Entrée
-
-### Données Météorologiques
-- Précipitations par période (mm)
-- Températures min/max (°C)
-- Humidité (%)
-- Vitesse du vent (km/h)
-
-### Caractéristiques de la Parcelle
-- Superficie (hectares)
-- Type de sol
-- Surface de pépinière
-- Bloc agricole
-
-### Intrants
-- DAP, Urée, Potasse (kg)
-- Micronutriments (kg)
-- Pesticides, herbicides (ml)
-- Taux de semis (kg)
+---
 
 ## 🤝 Contribution
 
@@ -228,22 +216,10 @@ Les contributions sont les bienvenues ! Pour contribuer :
 4. Pushez vers la branche (`git push origin feature/AmazingFeature`)
 5. Ouvrez une Pull Request
 
-## 📧 Contact
-
-Pour toute question ou support :
-- 📧 Email : support@paddy-ai.tn
-- 🌐 Web : www.paddy-ai.tn
-
 ## 📄 Licence
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+MIT License © Zeineb Ghrab
 
-## 🙏 Remerciements
-
-- Agriculteurs participants pour les données
-- Ministère de l'Agriculture pour le soutien
-- Communauté open source pour les outils
-
----
-
-**Développé avec ❤️ pour les agriculteurs tunisiens**
+## 🙋 À propos du développeur  
+Réalisé avec passion par Zeineb Ghrab  
+🎓 Ingénieure en Data Science | 🧠 Passionnée par les données, l'IA et le développement full-stack
